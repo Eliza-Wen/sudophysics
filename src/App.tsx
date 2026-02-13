@@ -285,7 +285,7 @@ function App() {
     const mount = renderRef.current
     if (!mount || layout.width === 0) return
 
-    const { Engine, Render, Runner, World, Bodies, Events, Composite, Body, Query } = Matter
+    const { Engine, Render, Runner, World, Bodies, Events, Body, Query } = Matter
 
     const engine = Engine.create()
     engine.gravity.y = 1.1

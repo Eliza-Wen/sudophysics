@@ -173,7 +173,6 @@ function App() {
   const gridSize = levelData.size
   const gridCells = useMemo(() => Array.from({ length: gridSize * gridSize }, (_, i) => i), [gridSize])
   const levelReward = getLevelReward(currentLevel)
-  const powerupCost = Math.max(1, Math.ceil(score * 0.5))
 
   const slotInfo = useMemo<SlotInfo[]>(() => {
     const rows = puzzleGrid.length

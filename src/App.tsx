@@ -864,7 +864,7 @@ function App() {
 
   return (
     <div className="nature-bg text-slate-900">
-      <div className="mx-auto max-w-6xl px-4 py-6">
+      <div className="flex min-h-screen w-full flex-col">
         <div className="barrage-layer" aria-hidden="true">
           {barrageMessages.map((msg) => (
             <div
@@ -877,9 +877,9 @@ function App() {
           ))}
         </div>
         {gameState === 'MENU' && (
-          <div className="panel flex min-h-[70vh] flex-col items-center justify-start pt-24 text-center">
-            <div className="mb-12">
-              <p className="text-xs uppercase tracking-[0.4em] text-emerald-700/70 mb-8">Welcome</p>
+          <div className="panel flex flex-1 flex-col items-center justify-center px-4 py-6 text-center">
+            <div className="mb-8">
+              <p className="text-xs uppercase tracking-[0.4em] text-emerald-700/70 mb-4">Welcome</p>
               <h1
                 className="text-6xl font-black tracking-[0.2em] rainbow-text"
                 onClick={handleTitleTap}
@@ -889,13 +889,13 @@ function App() {
                 SUDO-PHYSICS
               </h1>
             </div>
-            <div className="mt-32">
-              <div className="text-xs uppercase tracking-[0.35em] text-emerald-700/60 mb-6">Total Score</div>
+            <div className="mb-8">
+              <div className="text-xs uppercase tracking-[0.35em] text-emerald-700/60 mb-4">Total Score</div>
               <div className="score-display-box">
                 <span className="score-number">{score}</span>
               </div>
             </div>
-            <div style={{ marginTop: '250px' }} className="flex flex-col items-center gap-6">
+            <div className="flex flex-col items-center gap-6">
               {showLevelPicker && (
                 <div className="flex flex-col items-center gap-3">
                   <div className="text-xs uppercase tracking-[0.35em] text-emerald-700/60">Quick Level</div>
@@ -924,7 +924,7 @@ function App() {
         )}
 
         {showGame && (
-          <>
+          <div className="flex flex-1 flex-col overflow-hidden px-4 py-6">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
               <div>
                 <p className="text-xs uppercase tracking-[0.3em] text-emerald-700/70">Peaceful Mode</p>
@@ -949,10 +949,10 @@ function App() {
 
             <div
               ref={containerRef}
-              className={`panel game-panel relative mx-auto ${isBlurred ? 'blur-[1.5px]' : ''}`}
+              className={`panel game-panel relative mx-auto flex-1 ${isBlurred ? 'blur-[1.5px]' : ''}`}
               style={{ width: layout.width || '100%' }}
             >
-              <div className="relative" style={{ height: layout.height || 640 }}>
+              <div className="relative h-full" style={{ minHeight: layout.height || 640 }}>
                 <div ref={renderRef} className="pointer-events-auto absolute inset-0" />
 
                 <div className="pointer-events-none absolute inset-0">
@@ -1011,11 +1011,11 @@ function App() {
                 </div>
               </div>
             </div>
-          </>
+          </div>
         )}
 
         {gameState === 'GAME_OVER' && (
-          <div className="finale-screen mt-6 flex min-h-[70vh] flex-col items-center justify-center text-center">
+          <div className="finale-screen flex flex-1 flex-col items-center justify-center px-4 py-6 text-center">
             <div className="finale-content">
               <p className="finale-kicker">Final Level Complete</p>
               <h2 className="finale-title">A Cosmic Journey Ends</h2>

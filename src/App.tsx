@@ -896,9 +896,7 @@ function App() {
                         const isEmpty = value === 0
                         return (
                           <div key={cell} className={isEmpty ? 'cell cell-empty' : 'cell'}>
-                            {isEmpty ? (
-                              <span className="cell-dot" />
-                            ) : (
+                            {!isEmpty && (
                               <span className="cell-text" style={{ fontSize: cellFontSize }}>
                                 {value}
                               </span>

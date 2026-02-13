@@ -35,7 +35,7 @@ type BarrageMessage = {
 
 type OutcomeState = 'NONE' | 'SUCCESS' | 'FAIL'
 
-const LEVEL_COUNT = 12
+const LEVEL_COUNT = 8
 const MIN_GRID_SIZE = 3
 const MAX_GRID_SIZE = 14
 
@@ -48,10 +48,6 @@ const LEVEL_SUCCESS_MESSAGES: Record<number, string> = {
   6: 'Mind-blowing!',
   7: 'Legendary!',
   8: "You're a master!",
-  9: 'Phenomenal!',
-  10: 'Supreme intellect!',
-  11: 'Almost done!',
-  12: 'Perfect completion!',
 }
 
 const LEVEL_FAIL_MESSAGES: Record<number, string> = {
@@ -63,10 +59,6 @@ const LEVEL_FAIL_MESSAGES: Record<number, string> = {
   6: 'Try again!',
   7: 'So close!',
   8: 'One more time!',
-  9: 'Believe in yourself!',
-  10: 'You got this!',
-  11: 'Nearly there!',
-  12: 'Give it another shot!',
 }
 
 const colors = ['#34d399', '#60a5fa', '#facc15', '#f472b6', '#22d3ee', '#a78bfa']
@@ -146,8 +138,11 @@ function App() {
   const [modalState, setModalState] = useState<ModalState>('NONE')
   const [currentLevel, setCurrentLevel] = useState(1)
   const [menuLevel, setMenuLevel] = useState(6)
+  const [showLevelPicker, setShowLevelPicker] = useState(false)
   const [score, setScore] = useState(0)
-  const [startTime, setStartTime] = useState<number | null>(null)
+  const [sessionStart, setSessionStart] = useState<number | null>(null)
+  const [sessionElapsed, setSessionElapsed] = useState(0)
+  const [sessionEnded, setSessionEnded] = useState(false)
   const [isLevelClaimed, setIsLevelClaimed] = useState(false)
   const [seed, setSeed] = useState(1)
   const [bannerMessage, setBannerMessage] = useState('')
@@ -156,6 +151,8 @@ function App() {
   const [barrageMessages, setBarrageMessages] = useState<BarrageMessage[]>([])
   const [levelOutcome, setLevelOutcome] = useState<OutcomeState>('NONE')
   const barrageIdRef = useRef(1)
+  const levelTapCountRef = useRef(0)
+  const levelTapTimeoutRef = useRef<number | null>(null)
   const [layout, setLayout] = useState<Layout>({
     width: 0,
     height: 640,
@@ -189,6 +186,27 @@ function App() {
 
     return result
   }, [puzzleGrid, solvedGrid])
+
+  useEffect(() => {
+    if (sessionStart !== null) return
+    setSessionStart(Date.now())
+  }, [sessionStart])
+
+  useEffect(() => {
+    if (sessionStart === null || sessionEnded) return undefined
+    const intervalId = window.setInterval(() => {
+      setSessionElapsed(Math.floor((Date.now() - sessionStart) / 1000))
+    }, 1000)
+    return () => window.clearInterval(intervalId)
+  }, [sessionStart, sessionEnded])
+
+  useEffect(() => {
+    return () => {
+      if (levelTapTimeoutRef.current) {
+        window.clearTimeout(levelTapTimeoutRef.current)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     const updateLayout = () => {
@@ -652,8 +670,12 @@ function App() {
 
   const startGame = (level = 1) => {
     const now = Date.now()
+    if (sessionEnded) {
+      setSessionStart(now)
+      setSessionElapsed(0)
+      setSessionEnded(false)
+    }
     setSeed(now)
-    setStartTime(now)
     setScore(0)
     setCurrentLevel(level)
     setIsLevelClaimed(false)
@@ -672,6 +694,10 @@ function App() {
 
   const goNextLevel = () => {
     if (currentLevel >= LEVEL_COUNT) {
+      if (sessionStart !== null) {
+        setSessionElapsed(Math.floor((Date.now() - sessionStart) / 1000))
+      }
+      setSessionEnded(true)
       setGameState('GAME_OVER')
       return
     }
@@ -690,18 +716,19 @@ function App() {
     setCurrentLevel(1)
     setIsLevelClaimed(false)
     const now = Date.now()
-    setStartTime(now)
     setSeed(now)
     setModalState('NONE')
     setLevelOutcome('NONE')
     setBarrageMessages([])
+    setSessionStart(now)
+    setSessionElapsed(0)
+    setSessionEnded(false)
     setGameState('PLAYING')
   }
 
   const retryLevel = () => {
     const now = Date.now()
     setSeed(now)
-    setStartTime(now)
     setIsLevelClaimed(false)
     setModalState('NONE')
     setLevelOutcome('NONE')
@@ -798,14 +825,6 @@ function App() {
     setLevelOutcome('NONE')
   }
 
-  const elapsed = useMemo(() => {
-    if (!startTime) return { minutes: 0, seconds: 0 }
-    const diff = Date.now() - startTime
-    const minutes = Math.floor(diff / 60000)
-    const seconds = Math.floor((diff % 60000) / 1000)
-    return { minutes, seconds }
-  }, [startTime, gameState])
-
   const showGame = gameState === 'PLAYING' || modalState !== 'NONE' || levelOutcome !== 'NONE'
   const isBlurred = modalState !== 'NONE' || levelOutcome !== 'NONE'
   const outcomeState: OutcomeState =
@@ -815,6 +834,30 @@ function App() {
         ? modalState
         : 'NONE'
   const cellFontSize = Math.max(14, Math.floor((layout.gridSize / gridSize) * 0.55))
+  const sessionTime = useMemo(() => {
+    const hours = Math.floor(sessionElapsed / 3600)
+    const minutes = Math.floor((sessionElapsed % 3600) / 60)
+    const seconds = Math.floor(sessionElapsed % 60)
+    return { hours, minutes, seconds }
+  }, [sessionElapsed])
+
+  const handleTitleTap = () => {
+    levelTapCountRef.current += 1
+    if (levelTapTimeoutRef.current) {
+      window.clearTimeout(levelTapTimeoutRef.current)
+    }
+    levelTapTimeoutRef.current = window.setTimeout(() => {
+      levelTapCountRef.current = 0
+    }, 1200)
+    if (levelTapCountRef.current >= 5) {
+      setShowLevelPicker((prev) => !prev)
+      levelTapCountRef.current = 0
+      if (levelTapTimeoutRef.current) {
+        window.clearTimeout(levelTapTimeoutRef.current)
+        levelTapTimeoutRef.current = null
+      }
+    }
+  }
 
   return (
     <div className="nature-bg text-slate-900">
@@ -834,7 +877,14 @@ function App() {
           <div className="panel flex min-h-[70vh] flex-col items-center justify-start pt-24 text-center">
             <div className="mb-12">
               <p className="text-xs uppercase tracking-[0.4em] text-emerald-700/70 mb-8">Welcome</p>
-              <h1 className="text-6xl font-black tracking-[0.2em] rainbow-text">SUDO-PHYSICS</h1>
+              <h1
+                className="text-6xl font-black tracking-[0.2em] rainbow-text"
+                onClick={handleTitleTap}
+                role="button"
+                aria-label="Toggle quick level selector"
+              >
+                SUDO-PHYSICS
+              </h1>
             </div>
             <div className="mt-32">
               <div className="text-xs uppercase tracking-[0.35em] text-emerald-700/60 mb-6">Total Score</div>
@@ -843,21 +893,27 @@ function App() {
               </div>
             </div>
             <div style={{ marginTop: '250px' }} className="flex flex-col items-center gap-6">
-              <div className="flex flex-col items-center gap-3">
-                <div className="text-xs uppercase tracking-[0.35em] text-emerald-700/60">Quick Level</div>
-                <select
-                  value={menuLevel}
-                  onChange={(event) => setMenuLevel(Number(event.target.value))}
-                  className="rounded-full border border-emerald-200 bg-white/80 px-5 py-2 text-sm font-semibold text-emerald-900 shadow-sm"
-                >
-                  {Array.from({ length: LEVEL_COUNT }, (_, index) => index + 1).map((level) => (
-                    <option key={level} value={level}>
-                      Level {level}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <button type="button" onClick={() => startGame(menuLevel)} className="btn-primary">
+              {showLevelPicker && (
+                <div className="flex flex-col items-center gap-3">
+                  <div className="text-xs uppercase tracking-[0.35em] text-emerald-700/60">Quick Level</div>
+                  <select
+                    value={menuLevel}
+                    onChange={(event) => setMenuLevel(Number(event.target.value))}
+                    className="rounded-full border border-emerald-200 bg-white/80 px-5 py-2 text-sm font-semibold text-emerald-900 shadow-sm"
+                  >
+                    {Array.from({ length: LEVEL_COUNT }, (_, index) => index + 1).map((level) => (
+                      <option key={level} value={level}>
+                        Level {level}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => startGame(showLevelPicker ? menuLevel : 1)}
+                className="btn-primary"
+              >
                 Start Game
               </button>
             </div>
@@ -956,15 +1012,19 @@ function App() {
         )}
 
         {gameState === 'GAME_OVER' && (
-          <div className="panel mt-6 flex min-h-[60vh] flex-col items-center justify-center gap-6 text-center">
-            <h2 className="text-3xl font-semibold text-emerald-900">Congratulations!</h2>
-            <p className="text-lg text-emerald-900/80">
-              You spent {elapsed.minutes} minutes and {elapsed.seconds} seconds in the garden of logic.
-            </p>
-            <div className="text-2xl font-semibold text-amber-700">Final Score: {score}</div>
-            <button type="button" onClick={restartGame} className="btn-primary">
-              Play Again
-            </button>
+          <div className="finale-screen mt-6 flex min-h-[70vh] flex-col items-center justify-center text-center">
+            <div className="finale-content">
+              <p className="finale-kicker">Final Level Complete</p>
+              <h2 className="finale-title">A Cosmic Journey Ends</h2>
+              <p className="finale-message">
+                Thank you for spending {sessionTime.hours} hours {sessionTime.minutes} minutes {sessionTime.seconds} seconds
+                on this game. May every day be lucky for you!
+              </p>
+              <div className="finale-score">Final Score: {score}</div>
+              <button type="button" onClick={restartGame} className="btn-primary">
+                Play Again
+              </button>
+            </div>
           </div>
         )}
       </div>

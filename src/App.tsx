@@ -427,15 +427,49 @@ function App() {
 
     render.canvas.style.pointerEvents = 'auto'
     render.canvas.style.touchAction = 'none'
-    const preventTouch = (event: TouchEvent) => event.preventDefault()
-    render.canvas.addEventListener('touchmove', preventTouch, { passive: false })
     const mouse = Mouse.create(render.canvas)
     const pixelRatio = render.options.pixelRatio ?? window.devicePixelRatio ?? 1
     Mouse.setScale(mouse, {
       x: 1 / pixelRatio,
       y: 1 / pixelRatio,
     })
-    Mouse.setOffset(mouse, { x: 0, y: 0 })
+    const updateMouseOffset = () => {
+      const rect = render.canvas.getBoundingClientRect()
+      Mouse.setOffset(mouse, { x: rect.left, y: rect.top })
+    }
+    updateMouseOffset()
+    window.addEventListener('resize', updateMouseOffset)
+
+    const mouseAny = mouse as unknown as {
+      mousedown?: (event: Event) => void
+      mousemove?: (event: Event) => void
+      mouseup?: (event: Event) => void
+      touchstart?: (event: TouchEvent) => void
+      touchmove?: (event: TouchEvent) => void
+      touchend?: (event: TouchEvent) => void
+    }
+
+    const handleTouchStart = (event: TouchEvent) => {
+      event.preventDefault()
+      mouseAny.touchstart?.(event)
+      mouseAny.mousedown?.(event)
+    }
+
+    const handleTouchMove = (event: TouchEvent) => {
+      event.preventDefault()
+      mouseAny.touchmove?.(event)
+      mouseAny.mousemove?.(event)
+    }
+
+    const handleTouchEnd = (event: TouchEvent) => {
+      event.preventDefault()
+      mouseAny.touchend?.(event)
+      mouseAny.mouseup?.(event)
+    }
+
+    render.canvas.addEventListener('touchstart', handleTouchStart, { passive: false })
+    render.canvas.addEventListener('touchmove', handleTouchMove, { passive: false })
+    render.canvas.addEventListener('touchend', handleTouchEnd, { passive: false })
     const mouseConstraint = MouseConstraint.create(engine, {
       mouse: mouse,
       constraint: {
@@ -607,7 +641,10 @@ function App() {
       Events.off(mouseConstraint, 'enddrag', handleRelease)
       Events.off(mouseConstraint, 'startdrag', handleStartDrag)
       Events.off(engine, 'beforeUpdate', lockSnapped)
-      render.canvas.removeEventListener('touchmove', preventTouch)
+      window.removeEventListener('resize', updateMouseOffset)
+      render.canvas.removeEventListener('touchstart', handleTouchStart)
+      render.canvas.removeEventListener('touchmove', handleTouchMove)
+      render.canvas.removeEventListener('touchend', handleTouchEnd)
       Render.stop(render)
       Runner.stop(runner)
       World.clear(engine.world, false)

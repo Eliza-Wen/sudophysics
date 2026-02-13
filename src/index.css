@@ -228,7 +228,7 @@ canvas {
 
 .score-display-box {
   display: inline-block;
-  padding: 24px 48px;
+  padding: 10px 48px;
   border-radius: 20px;
   background: linear-gradient(
     135deg,

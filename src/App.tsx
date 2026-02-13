@@ -177,19 +177,22 @@ function App() {
     const updateLayout = () => {
       const screenWidth = window.innerWidth
       const screenHeight = window.innerHeight
-      const width = Math.min(980, Math.max(300, screenWidth - 24))
+      const width = Math.min(980, Math.max(300, screenWidth - (screenWidth < 520 ? 12 : 24)))
 
-      const hudHeight = screenWidth < 640 ? 150 : 120
+      const hudHeight = screenWidth < 520 ? 180 : screenWidth < 640 ? 150 : 120
       const verticalPadding = 24
       const availableHeight = Math.max(420, screenHeight - hudHeight - verticalPadding)
 
       const height = Math.min(Math.round(width * 1.15), availableHeight)
-      const gridSizePx = Math.min(Math.round(width * 0.72), Math.round(height * 0.58))
+      const gridSizePx = Math.min(
+        Math.round(width * (screenWidth < 520 ? 0.8 : 0.72)),
+        Math.round(height * 0.6),
+      )
       const gridX = Math.round((width - gridSizePx) / 2)
       const gridY = Math.max(10, Math.round(height * 0.04))
       const gutter = Math.max(12, Math.round(height * 0.05))
       const poolY = gridY + gridSizePx + gutter
-      const poolHeight = Math.max(110, height - poolY - gutter)
+      const poolHeight = Math.max(screenWidth < 520 ? 90 : 110, height - poolY - gutter)
       const poolWidth = width
       const poolX = 0
 
@@ -211,11 +214,11 @@ function App() {
     return () => window.removeEventListener('resize', updateLayout)
   }, [])
 
-  const pushBarrage = (text: string) => {
+    const pushBarrage = (text: string) => {
     const id = barrageIdRef.current
     barrageIdRef.current += 1
     const top = Math.round(8 + Math.random() * 40)
-    const duration = 6500 + Math.round(Math.random() * 2500)
+      const duration = 9000 + Math.round(Math.random() * 3000)
     setBarrageMessages((prev) => [...prev, { id, text, top, duration }])
     window.setTimeout(() => {
       setBarrageMessages((prev) => prev.filter((msg) => msg.id !== id))
@@ -233,7 +236,7 @@ function App() {
     const interval = window.setInterval(() => {
       burst()
       if (sent >= count) window.clearInterval(interval)
-    }, 380)
+    }, 520)
     return () => window.clearInterval(interval)
   }
 
@@ -424,6 +427,8 @@ function App() {
 
     render.canvas.style.pointerEvents = 'auto'
     render.canvas.style.touchAction = 'none'
+    const preventTouch = (event: TouchEvent) => event.preventDefault()
+    render.canvas.addEventListener('touchmove', preventTouch, { passive: false })
     const mouse = Mouse.create(render.canvas)
     const pixelRatio = render.options.pixelRatio ?? window.devicePixelRatio ?? 1
     Mouse.setScale(mouse, {
@@ -602,6 +607,7 @@ function App() {
       Events.off(mouseConstraint, 'enddrag', handleRelease)
       Events.off(mouseConstraint, 'startdrag', handleStartDrag)
       Events.off(engine, 'beforeUpdate', lockSnapped)
+      render.canvas.removeEventListener('touchmove', preventTouch)
       Render.stop(render)
       Runner.stop(runner)
       World.clear(engine.world, false)

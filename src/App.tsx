@@ -698,6 +698,9 @@ function App() {
         setSessionElapsed(Math.floor((Date.now() - sessionStart) / 1000))
       }
       setSessionEnded(true)
+      setModalState('NONE')
+      setLevelOutcome('NONE')
+      setBarrageMessages([])
       setGameState('GAME_OVER')
       return
     }

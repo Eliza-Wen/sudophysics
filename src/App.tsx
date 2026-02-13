@@ -282,19 +282,7 @@ function App() {
     const mount = renderRef.current
     if (!mount || layout.width === 0) return
 
-    const {
-      Engine,
-      Render,
-      Runner,
-      World,
-      Bodies,
-      Mouse,
-      MouseConstraint,
-      Events,
-      Composite,
-      Body,
-      Vector,
-    } = Matter
+    const { Engine, Render, Runner, World, Bodies, Mouse, MouseConstraint, Events, Composite, Body } = Matter
 
     const engine = Engine.create()
     engine.gravity.y = 1.1
@@ -437,9 +425,10 @@ function App() {
     render.canvas.style.pointerEvents = 'auto'
     render.canvas.style.touchAction = 'none'
     const mouse = Mouse.create(render.canvas)
+    const pixelRatio = render.options.pixelRatio ?? window.devicePixelRatio ?? 1
     Mouse.setScale(mouse, {
-      x: 1 / render.options.pixelRatio,
-      y: 1 / render.options.pixelRatio,
+      x: 1 / pixelRatio,
+      y: 1 / pixelRatio,
     })
     Mouse.setOffset(mouse, { x: 0, y: 0 })
     const mouseConstraint = MouseConstraint.create(engine, {
@@ -512,22 +501,23 @@ function App() {
       }
     }
 
-    const handleRelease = (event: Matter.IEvent<Matter.MouseConstraint>) => {
+    type DragEvent = Matter.IEvent<Matter.MouseConstraint> & { body?: Matter.Body }
+
+    const handleRelease = (event: DragEvent) => {
       const body = event.body
       if (!body) return
 
-      let nearest: SlotCenter | null = null
       let nearestDistance = Number.POSITIVE_INFINITY
-
-      slotCenters.forEach((slot) => {
+      const nearest = slotCenters.reduce<SlotCenter | undefined>((closest, slot) => {
         const dx = body.position.x - slot.x
         const dy = body.position.y - slot.y
         const dist = Math.hypot(dx, dy)
         if (dist < nearestDistance) {
           nearestDistance = dist
-          nearest = slot
+          return slot
         }
-      })
+        return closest
+      }, undefined)
 
       if (!nearest || nearestDistance > snapThreshold) return
 
@@ -557,7 +547,7 @@ function App() {
       evaluateGrid()
     }
 
-    const handleStartDrag = (event: Matter.IEvent<Matter.MouseConstraint>) => {
+    const handleStartDrag = (event: DragEvent) => {
       const body = event.body
       if (!body) return
       const slotIndex = bodyToSlotRef.current.get(body.id)

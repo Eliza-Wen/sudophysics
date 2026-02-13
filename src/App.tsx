@@ -744,6 +744,7 @@ function App() {
   const usePowerUpAutoFill = () => {
     const cost = Math.max(1, Math.ceil(score * 0.5))
     if (score < cost) {
+      setLevelOutcome('NONE')
       setModalState('INSUFFICIENT')
       return
     }
@@ -1084,11 +1085,17 @@ function App() {
               <h3 className="text-2xl font-semibold text-amber-700">Keep Going</h3>
               <p className="mt-2 text-sm text-emerald-900/70">Earn more points to use rewards.</p>
               <div className="mt-4 flex flex-col gap-3">
-                <button type="button" onClick={exitToMenu} className="btn-tertiary">
-                  Exit
-                </button>
-                <button type="button" onClick={() => setModalState('NONE')} className="btn-secondary">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModalState('NONE')
+                  }}
+                  className="btn-primary"
+                >
                   Continue Game
+                </button>
+                <button type="button" onClick={exitToMenu} className="btn-tertiary">
+                  Exit to Menu
                 </button>
               </div>
             </div>

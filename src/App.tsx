@@ -877,9 +877,10 @@ function App() {
           ))}
         </div>
         {gameState === 'MENU' && (
-          <div className="panel flex flex-1 flex-col items-center justify-center px-4 py-6 text-center">
-            <div className="mb-8">
-              <p className="text-xs uppercase tracking-[0.4em] text-emerald-700/70 mb-4">Welcome</p>
+          <div className="panel flex flex-1 flex-col items-center justify-between px-4 py-12 text-center">
+            {/* Top Section: Welcome & Title */}
+            <div className="flex flex-col items-center">
+              <p className="text-xs uppercase tracking-[0.4em] text-emerald-700/70 mb-12">Welcome</p>
               <h1
                 className="text-6xl font-black tracking-[0.2em] rainbow-text"
                 onClick={handleTitleTap}
@@ -889,13 +890,17 @@ function App() {
                 SUDO-PHYSICS
               </h1>
             </div>
-            <div className="mb-8">
-              <div className="text-xs uppercase tracking-[0.35em] text-emerald-700/60 mb-4">Total Score</div>
+
+            {/* Middle Section: Score */}
+            <div className="flex flex-col items-center">
+              <div className="text-xs uppercase tracking-[0.35em] text-emerald-700/60 mb-8">Total Score</div>
               <div className="score-display-box">
                 <span className="score-number">{score}</span>
               </div>
             </div>
-            <div className="flex flex-col items-center gap-6">
+
+            {/* Bottom Section: Level Picker & Button */}
+            <div className="flex flex-col items-center gap-8">
               {showLevelPicker && (
                 <div className="flex flex-col items-center gap-3">
                   <div className="text-xs uppercase tracking-[0.35em] text-emerald-700/60">Quick Level</div>

@@ -877,10 +877,10 @@ function App() {
           ))}
         </div>
         {gameState === 'MENU' && (
-          <div className="panel flex flex-1 flex-col items-center justify-between px-4 py-12 text-center">
+          <div className="panel flex flex-1 flex-col items-center justify-center px-4 py-6 text-center gap-12">
             {/* Top Section: Welcome & Title */}
             <div className="flex flex-col items-center">
-              <p className="text-xs uppercase tracking-[0.4em] text-emerald-700/70 mb-12">Welcome</p>
+              <p className="text-xs uppercase tracking-[0.4em] text-emerald-700/70 mb-8">Welcome</p>
               <h1
                 className="text-6xl font-black tracking-[0.2em] rainbow-text"
                 onClick={handleTitleTap}
@@ -1020,7 +1020,7 @@ function App() {
         )}
 
         {gameState === 'GAME_OVER' && (
-          <div className="finale-screen flex flex-1 flex-col items-center justify-center px-4 py-6 text-center">
+          <div className="finale-screen flex flex-1 flex-col items-center justify-center px-4 py-10 text-center">
             <div className="finale-content">
               <p className="finale-kicker">Final Level Complete</p>
               <h2 className="finale-title">A Cosmic Journey Ends</h2>

@@ -827,8 +827,10 @@ function App() {
               <h1 className="text-6xl font-black tracking-[0.2em] rainbow-text">SUDO-PHYSICS</h1>
             </div>
             <div className="mt-32">
-              <div className="text-xs uppercase tracking-[0.35em] text-emerald-700/60 mb-4">Total Score</div>
-              <div className="text-4xl font-bold text-amber-700">{score}</div>
+              <div className="text-xs uppercase tracking-[0.35em] text-emerald-700/60 mb-6">Total Score</div>
+              <div className="score-display-box">
+                <span className="score-number">{score}</span>
+              </div>
             </div>
             <div style={{ marginTop: '250px' }}>
               <button type="button" onClick={startGame} className="btn-primary">

@@ -145,6 +145,7 @@ function App() {
   const [gameState, setGameState] = useState<GameState>('MENU')
   const [modalState, setModalState] = useState<ModalState>('NONE')
   const [currentLevel, setCurrentLevel] = useState(1)
+  const [menuLevel, setMenuLevel] = useState(6)
   const [score, setScore] = useState(0)
   const [startTime, setStartTime] = useState<number | null>(null)
   const [isLevelClaimed, setIsLevelClaimed] = useState(false)
@@ -649,12 +650,12 @@ function App() {
     }
   }, [gameState, layout, slotInfo, gridSize])
 
-  const startGame = () => {
+  const startGame = (level = 1) => {
     const now = Date.now()
     setSeed(now)
     setStartTime(now)
     setScore(0)
-    setCurrentLevel(1)
+    setCurrentLevel(level)
     setIsLevelClaimed(false)
     setModalState('NONE')
     setLevelOutcome('NONE')
@@ -841,8 +842,22 @@ function App() {
                 <span className="score-number">{score}</span>
               </div>
             </div>
-            <div style={{ marginTop: '250px' }}>
-              <button type="button" onClick={startGame} className="btn-primary">
+            <div style={{ marginTop: '250px' }} className="flex flex-col items-center gap-6">
+              <div className="flex flex-col items-center gap-3">
+                <div className="text-xs uppercase tracking-[0.35em] text-emerald-700/60">Quick Level</div>
+                <select
+                  value={menuLevel}
+                  onChange={(event) => setMenuLevel(Number(event.target.value))}
+                  className="rounded-full border border-emerald-200 bg-white/80 px-5 py-2 text-sm font-semibold text-emerald-900 shadow-sm"
+                >
+                  {Array.from({ length: LEVEL_COUNT }, (_, index) => index + 1).map((level) => (
+                    <option key={level} value={level}>
+                      Level {level}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button type="button" onClick={() => startGame(menuLevel)} className="btn-primary">
                 Start Game
               </button>
             </div>

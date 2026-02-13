@@ -827,7 +827,7 @@ function App() {
               <h1 className="text-6xl font-black tracking-[0.2em] rainbow-text">SUDO-PHYSICS</h1>
             </div>
             <div className="mt-32">
-              <div className="text-xs uppercase tracking-[0.35em] text-emerald-700/60 mb-10">Total Score</div>
+              <div className="text-xs uppercase tracking-[0.35em] text-emerald-700/60 mb-6">Total Score</div>
               <div className="score-display-box">
                 <span className="score-number">{score}</span>
               </div>

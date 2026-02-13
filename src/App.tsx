@@ -649,12 +649,14 @@ function App() {
     setIsLevelClaimed(false)
     setModalState('NONE')
     setLevelOutcome('NONE')
+    setBarrageMessages([])
     setGameState('PLAYING')
   }
 
   const exitToMenu = () => {
     setModalState('NONE')
     setLevelOutcome('NONE')
+    setBarrageMessages([])
     setGameState('MENU')
   }
 
@@ -669,6 +671,7 @@ function App() {
     setScoreDelta(null)
     setScoreFlash(false)
     setLevelOutcome('NONE')
+    setBarrageMessages([])
     setGameState('PLAYING')
   }
 
@@ -681,6 +684,7 @@ function App() {
     setSeed(now)
     setModalState('NONE')
     setLevelOutcome('NONE')
+    setBarrageMessages([])
     setGameState('PLAYING')
   }
 
@@ -693,6 +697,7 @@ function App() {
     setLevelOutcome('NONE')
     setScoreDelta(null)
     setScoreFlash(false)
+    setBarrageMessages([])
     setGameState('PLAYING')
   }
 
@@ -816,14 +821,20 @@ function App() {
           ))}
         </div>
         {gameState === 'MENU' && (
-          <div className="panel flex min-h-[70vh] flex-col items-center justify-center gap-6 text-center">
-            <p className="text-xs uppercase tracking-[0.4em] text-emerald-700/80">Welcome</p>
-            <h1 className="text-4xl font-semibold tracking-[0.3em] text-emerald-900">SUDO-PHYSICS</h1>
-            <div className="text-sm uppercase tracking-[0.35em] text-emerald-700/70">Total Score</div>
-            <div className="text-3xl font-semibold text-amber-700">{score}</div>
-            <button type="button" onClick={startGame} className="btn-primary">
-              Start Game
-            </button>
+          <div className="panel flex min-h-[70vh] flex-col items-center justify-start pt-24 text-center">
+            <div className="mb-12">
+              <p className="text-xs uppercase tracking-[0.4em] text-emerald-700/70 mb-8">Welcome</p>
+              <h1 className="text-6xl font-black tracking-[0.2em] rainbow-text">SUDO-PHYSICS</h1>
+            </div>
+            <div className="mt-32">
+              <div className="text-xs uppercase tracking-[0.35em] text-emerald-700/60 mb-4">Total Score</div>
+              <div className="text-4xl font-bold text-amber-700">{score}</div>
+            </div>
+            <div style={{ marginTop: '250px' }}>
+              <button type="button" onClick={startGame} className="btn-primary">
+                Start Game
+              </button>
+            </div>
           </div>
         )}
 
@@ -942,7 +953,7 @@ function App() {
               <div className="dance">🕺 💃 🪩</div>
               <h3 className="text-2xl font-semibold text-emerald-900">Level {currentLevel} Complete!</h3>
               <p className="mt-2 text-sm text-emerald-900/70">
-                You earned +{levelReward} points. Fireworks, confetti, and good vibes!
+                You earned {levelReward} points
               </p>
               <div className="mt-3 text-base font-semibold text-amber-700">Total Score: {score}</div>
               <div className="mt-4 flex flex-col gap-3">

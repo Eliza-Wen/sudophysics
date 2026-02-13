@@ -209,6 +209,23 @@ canvas {
   white-space: nowrap;
 }
 
+.rainbow-text {
+  background: linear-gradient(
+    90deg,
+    #ef4444,
+    #f97316,
+    #eab308,
+    #22c55e,
+    #0ea5e9,
+    #6366f1,
+    #d946ef
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 900;
+}
+
 .modal-card {
   width: 100%;
   max-width: 380px;

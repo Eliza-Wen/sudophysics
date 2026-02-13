@@ -493,3 +493,56 @@ canvas {
   font-size: 1.6rem;
   margin-bottom: 8px;
 }
+
+/* Mobile-specific layout fixes */
+@media (max-width: 768px) {
+  /* Menu screen: center vertically on mobile */
+  .panel.flex.flex-1.justify-between {
+    justify-content: center !important;
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+    gap: 2rem;
+  }
+
+  /* Welcome section on mobile */
+  .panel > div:first-child {
+    flex-shrink: 0;
+  }
+
+  /* Score section on mobile */
+  .panel > div:nth-child(2) {
+    flex-shrink: 0;
+  }
+
+  /* Buttons section on mobile */
+  .panel > div:nth-child(3) {
+    flex-shrink: 0;
+  }
+
+  /* Game screen header visibility on mobile */
+  .text-2xl.font-semibold.text-emerald-950 {
+    font-size: 1.125rem;
+  }
+
+  /* Reduce score box size on mobile */
+  .score-number {
+    font-size: 3rem;
+  }
+
+  /* Finale screen on mobile */
+  .finale-screen {
+    padding: 2rem 1rem;
+  }
+
+  .finale-content {
+    padding: 2rem 1.5rem;
+  }
+
+  .finale-title {
+    font-size: 1.875rem;
+  }
+
+  .finale-message {
+    font-size: 0.875rem;
+  }
+}

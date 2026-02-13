@@ -39,18 +39,35 @@ const LEVEL_COUNT = 12
 const MIN_GRID_SIZE = 3
 const MAX_GRID_SIZE = 14
 
-const SUCCESS_MESSAGES = [
-  "You're so smart!",
-  "You're the smartest person in the world!",
-  "You're amazing!",
-  "Today is your lucky day!",
-]
+const LEVEL_SUCCESS_MESSAGES: Record<number, string> = {
+  1: 'Amazing start!',
+  2: "You're on fire!",
+  3: 'Genius move!',
+  4: 'Incredible work!',
+  5: 'Unstoppable!',
+  6: 'Mind-blowing!',
+  7: 'Legendary!',
+  8: "You're a master!",
+  9: 'Phenomenal!',
+  10: 'Supreme intellect!',
+  11: 'Almost done!',
+  12: 'Perfect completion!',
+}
 
-const FAIL_MESSAGES = [
-  'Try one more time, you can do it!',
-  "You're so close!",
-  "Don't give up!",
-]
+const LEVEL_FAIL_MESSAGES: Record<number, string> = {
+  1: 'Keep trying!',
+  2: 'You can do it!',
+  3: 'Stay focused!',
+  4: 'Almost there!',
+  5: "Don't give up!",
+  6: 'Try again!',
+  7: 'So close!',
+  8: 'One more time!',
+  9: 'Believe in yourself!',
+  10: 'You got this!',
+  11: 'Nearly there!',
+  12: 'Give it another shot!',
+}
 
 const colors = ['#34d399', '#60a5fa', '#facc15', '#f472b6', '#22d3ee', '#a78bfa']
 
@@ -218,26 +235,11 @@ function App() {
     const id = barrageIdRef.current
     barrageIdRef.current += 1
     const top = Math.round(8 + Math.random() * 40)
-      const duration = 9000 + Math.round(Math.random() * 3000)
+    const duration = 9000 + Math.round(Math.random() * 3000)
     setBarrageMessages((prev) => [...prev, { id, text, top, duration }])
     window.setTimeout(() => {
       setBarrageMessages((prev) => prev.filter((msg) => msg.id !== id))
     }, duration + 200)
-  }
-
-  const playBarrage = (messages: string[], count: number) => {
-    let sent = 0
-    const burst = () => {
-      const text = messages[Math.floor(Math.random() * messages.length)]
-      pushBarrage(text)
-      sent += 1
-    }
-    burst()
-    const interval = window.setInterval(() => {
-      burst()
-      if (sent >= count) window.clearInterval(interval)
-    }, 520)
-    return () => window.clearInterval(interval)
   }
 
   useEffect(() => {
@@ -248,8 +250,9 @@ function App() {
         confetti({ particleCount: 80, spread: 120, origin: { x: 0.8, y: 0.4 } })
       }
       burst()
-      setBannerMessage(SUCCESS_MESSAGES[Math.floor(Math.random() * SUCCESS_MESSAGES.length)])
-      const stopBarrage = playBarrage(SUCCESS_MESSAGES, 10)
+      const message = LEVEL_SUCCESS_MESSAGES[currentLevel] ?? 'Amazing!'
+      setBannerMessage(message)
+      pushBarrage(message)
 
       if (!isLevelClaimed) {
         setScore((prev) => prev + levelReward)
@@ -262,15 +265,14 @@ function App() {
         }, 2000)
       }
 
-      return () => {
-        stopBarrage()
-      }
+      return undefined
     }
 
     if (modalState === 'FAIL') {
-      setBannerMessage(FAIL_MESSAGES[Math.floor(Math.random() * FAIL_MESSAGES.length)])
-      const stopBarrage = playBarrage(FAIL_MESSAGES, 8)
-      return () => stopBarrage()
+      const message = LEVEL_FAIL_MESSAGES[currentLevel] ?? 'Try again!'
+      setBannerMessage(message)
+      pushBarrage(message)
+      return undefined
     }
 
     if (modalState === 'NONE') {
@@ -482,11 +484,9 @@ function App() {
       }
 
       if (isValid) {
-        pushBarrage(SUCCESS_MESSAGES[Math.floor(Math.random() * SUCCESS_MESSAGES.length)])
         setModalState('SUCCESS')
         setLevelOutcome('SUCCESS')
       } else {
-        pushBarrage(FAIL_MESSAGES[Math.floor(Math.random() * FAIL_MESSAGES.length)])
         setModalState('FAIL')
         setLevelOutcome('FAIL')
       }
@@ -506,7 +506,13 @@ function App() {
       }, undefined)
 
       if (!nearest || nearestDistance > snapThreshold) {
+        // Return ball to pool instead of leaving it static or stuck
         Body.setStatic(body, false)
+        Body.setPosition(body, {
+          x: layout.poolX + Math.random() * layout.poolWidth,
+          y: layout.poolY + Math.random() * layout.poolHeight * 0.4,
+        })
+        Body.setVelocity(body, { x: 0, y: 0 })
         return
       }
 
@@ -691,16 +697,58 @@ function App() {
     setGameState('PLAYING')
   }
 
+  const usePowerUpAutoFill = () => {
+    const cost = Math.max(1, Math.ceil(score * 0.5))
+    if (score < cost) {
+      setModalState('INSUFFICIENT')
+      return
+    }
+    setScore((prev) => prev - cost)
+    setLevelOutcome('NONE')
+    setModalState('POWERUPS')
+  }
+
   const applyPowerup = (type: 'AUTO_FILL' | 'SHUFFLE' | 'CALM') => {
-    if (score < powerupCost || !engineRef.current) return
-    setScore((prev) => Math.max(0, prev - powerupCost))
+    if (!engineRef.current) return
 
     if (type === 'AUTO_FILL') {
+      const bodies = Matter.Composite.allBodies(engineRef.current.world)
+      
+      // First, reset all balls to the pool
+      const snappedBodyIds = Array.from(bodyToSlotRef.current.keys())
+      snappedBodyIds.forEach((bodyId) => {
+        const body = bodies.find((b) => b.id === bodyId)
+        if (!body) return
+        
+        // Make ball non-static and return to pool
+        Matter.Body.setStatic(body, false)
+        Matter.Body.setPosition(body, {
+          x: layout.poolX + Math.random() * layout.poolWidth,
+          y: layout.poolY + Math.random() * layout.poolHeight * 0.5,
+        })
+        Matter.Body.setVelocity(body, { x: 0, y: 0 })
+        
+        // Reset visual style
+        const value = ballValuesRef.current.get(body.id)
+        if (value !== undefined) {
+          const colorIndex = (value - 1) % colors.length
+          body.render.fillStyle = colors[colorIndex]
+          body.render.strokeStyle = colors[colorIndex]
+        }
+      })
+      
+      // Clear all slot mappings
+      slotToBodyRef.current.clear()
+      bodyToSlotRef.current.clear()
+      solvedSlotsRef.current.clear()
+      
+      // Then auto-fill one number
       const targetSlot = slotCentersRef.current.find((slot) => !slotToBodyRef.current.has(slot.index))
       if (!targetSlot) return
-      const bodies = Matter.Composite.allBodies(engineRef.current.world)
+      
       const body = bodies.find((b) => !b.isStatic && ballValuesRef.current.get(b.id) === targetSlot.value)
       if (!body) return
+      
       Matter.Body.setPosition(body, { x: targetSlot.x, y: targetSlot.y })
       Matter.Body.setVelocity(body, { x: 0, y: 0 })
       Matter.Body.setStatic(body, true)
@@ -733,6 +781,7 @@ function App() {
     }
 
     setModalState('NONE')
+    setLevelOutcome('NONE')
   }
 
   const elapsed = useMemo(() => {
@@ -848,6 +897,15 @@ function App() {
                     </div>
                   </div>
 
+                  <div 
+                    className="pool-label-inside" 
+                    style={{ 
+                      top: layout.poolY + 10, 
+                      left: layout.poolX + layout.poolWidth / 2 
+                    }}
+                  >
+                    BALL POOL
+                  </div>
                   <div
                     className="absolute pool"
                     style={{
@@ -856,9 +914,7 @@ function App() {
                       width: layout.poolWidth,
                       height: layout.poolHeight,
                     }}
-                  >
-                    <div className="pool-label">Ball Pool</div>
-                  </div>
+                  />
                 </div>
               </div>
             </div>
@@ -910,14 +966,7 @@ function App() {
                 <button type="button" onClick={retryLevel} className="btn-primary">
                   Retry Level
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setLevelOutcome('NONE')
-                    setModalState('POWERUPS')
-                  }}
-                  className="btn-secondary"
-                >
+                <button type="button" onClick={usePowerUpAutoFill} className="btn-secondary">
                   Use Power-up
                 </button>
                 <button type="button" onClick={exitToMenu} className="btn-tertiary">
@@ -946,36 +995,19 @@ function App() {
           {modalState === 'POWERUPS' && (
             <div className="modal-card">
               <div className="banner">Power-up Garden</div>
-              <p className="mt-2 text-sm text-emerald-900/70">
-                Each power-up costs 50% of your current points ({powerupCost} pts).
-              </p>
+              <p className="mt-2 text-sm text-emerald-900/70">Auto-fill one correct number?</p>
               <div className="mt-4 flex flex-col gap-3">
-                <button
-                  type="button"
-                  onClick={() => applyPowerup('AUTO_FILL')}
-                  disabled={score < powerupCost}
-                  className="btn-secondary"
-                >
+                <button type="button" onClick={() => applyPowerup('AUTO_FILL')} className="btn-primary">
                   Auto-fill one number
                 </button>
                 <button
                   type="button"
-                  onClick={() => applyPowerup('SHUFFLE')}
-                  disabled={score < powerupCost}
-                  className="btn-secondary"
+                  onClick={() => {
+                    setModalState('NONE')
+                  }}
+                  className="btn-tertiary"
                 >
-                  Shuffle loose balls
-                </button>
-                <button
-                  type="button"
-                  onClick={() => applyPowerup('CALM')}
-                  disabled={score < powerupCost}
-                  className="btn-secondary"
-                >
-                  Calm breeze (slow gravity)
-                </button>
-                <button type="button" onClick={() => setModalState('NONE')} className="btn-tertiary">
-                  Close
+                  Cancel
                 </button>
               </div>
             </div>

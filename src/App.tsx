@@ -200,15 +200,24 @@ function App() {
       const availableHeight = Math.max(420, screenHeight - hudHeight - verticalPadding)
 
       const height = Math.min(Math.round(width * 1.15), availableHeight)
-      const gridSizePx = Math.min(
-        Math.round(width * (screenWidth < 520 ? 0.8 : 0.72)),
-        Math.round(height * 0.6),
+      const density = Math.min(1, Math.max(0, (gridSize - MIN_GRID_SIZE) / (MAX_GRID_SIZE - MIN_GRID_SIZE)))
+      const gridY = Math.max(10, Math.round(height * 0.03))
+      const gutter = Math.max(8, Math.round(height * (0.05 - density * 0.02)))
+      const minPoolHeight = screenWidth < 520 ? 80 : 100
+      const maxGridHeight = height - gridY - gutter - minPoolHeight
+      const gridWidthScale = screenWidth < 520 ? 0.9 : 0.78
+      const gridHeightScale = 0.62 + density * 0.16
+      const gridSizePx = Math.max(
+        180,
+        Math.min(
+          Math.round(width * gridWidthScale),
+          Math.round(height * gridHeightScale),
+          Math.round(maxGridHeight),
+        ),
       )
       const gridX = Math.round((width - gridSizePx) / 2)
-      const gridY = Math.max(10, Math.round(height * 0.04))
-      const gutter = Math.max(12, Math.round(height * 0.05))
       const poolY = gridY + gridSizePx + gutter
-      const poolHeight = Math.max(screenWidth < 520 ? 90 : 110, height - poolY - gutter)
+      const poolHeight = Math.max(minPoolHeight, height - poolY - gutter)
       const poolWidth = width
       const poolX = 0
 
@@ -228,7 +237,7 @@ function App() {
     updateLayout()
     window.addEventListener('resize', updateLayout)
     return () => window.removeEventListener('resize', updateLayout)
-  }, [])
+  }, [gridSize])
 
     const pushBarrage = (text: string) => {
     const id = barrageIdRef.current

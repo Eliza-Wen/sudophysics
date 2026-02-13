@@ -285,7 +285,7 @@ function App() {
     const mount = renderRef.current
     if (!mount || layout.width === 0) return
 
-    const { Engine, Render, Runner, World, Bodies, Mouse, MouseConstraint, Events, Composite, Body } = Matter
+    const { Engine, Render, Runner, World, Bodies, Events, Composite, Body, Query } = Matter
 
     const engine = Engine.create()
     engine.gravity.y = 1.1
@@ -427,58 +427,10 @@ function App() {
 
     render.canvas.style.pointerEvents = 'auto'
     render.canvas.style.touchAction = 'none'
-    const mouse = Mouse.create(render.canvas)
-    const pixelRatio = render.options.pixelRatio ?? window.devicePixelRatio ?? 1
-    Mouse.setScale(mouse, {
-      x: 1 / pixelRatio,
-      y: 1 / pixelRatio,
-    })
-    const updateMouseOffset = () => {
-      const rect = render.canvas.getBoundingClientRect()
-      Mouse.setOffset(mouse, { x: rect.left, y: rect.top })
-    }
-    updateMouseOffset()
-    window.addEventListener('resize', updateMouseOffset)
-
-    const mouseAny = mouse as unknown as {
-      mousedown?: (event: Event) => void
-      mousemove?: (event: Event) => void
-      mouseup?: (event: Event) => void
-      touchstart?: (event: TouchEvent) => void
-      touchmove?: (event: TouchEvent) => void
-      touchend?: (event: TouchEvent) => void
-    }
-
-    const handleTouchStart = (event: TouchEvent) => {
-      event.preventDefault()
-      mouseAny.touchstart?.(event)
-      mouseAny.mousedown?.(event)
-    }
-
-    const handleTouchMove = (event: TouchEvent) => {
-      event.preventDefault()
-      mouseAny.touchmove?.(event)
-      mouseAny.mousemove?.(event)
-    }
-
-    const handleTouchEnd = (event: TouchEvent) => {
-      event.preventDefault()
-      mouseAny.touchend?.(event)
-      mouseAny.mouseup?.(event)
-    }
-
-    render.canvas.addEventListener('touchstart', handleTouchStart, { passive: false })
-    render.canvas.addEventListener('touchmove', handleTouchMove, { passive: false })
-    render.canvas.addEventListener('touchend', handleTouchEnd, { passive: false })
-    const mouseConstraint = MouseConstraint.create(engine, {
-      mouse: mouse,
-      constraint: {
-        stiffness: 0.2,
-        render: { visible: false },
-      },
-    })
-    Composite.add(engine.world, mouseConstraint)
-    render.mouse = mouse
+    const preventTouch = (event: TouchEvent) => event.preventDefault()
+    render.canvas.addEventListener('touchstart', preventTouch, { passive: false })
+    render.canvas.addEventListener('touchmove', preventTouch, { passive: false })
+    render.canvas.addEventListener('touchend', preventTouch, { passive: false })
 
     const snapThreshold = cellSize * 0.75
 
@@ -540,12 +492,7 @@ function App() {
       }
     }
 
-    type DragEvent = Matter.IEvent<Matter.MouseConstraint> & { body?: Matter.Body }
-
-    const handleRelease = (event: DragEvent) => {
-      const body = event.body
-      if (!body) return
-
+    const dropBody = (body: Matter.Body) => {
       let nearestDistance = Number.POSITIVE_INFINITY
       const nearest = slotCenters.reduce<SlotCenter | undefined>((closest, slot) => {
         const dx = body.position.x - slot.x
@@ -558,7 +505,10 @@ function App() {
         return closest
       }, undefined)
 
-      if (!nearest || nearestDistance > snapThreshold) return
+      if (!nearest || nearestDistance > snapThreshold) {
+        Body.setStatic(body, false)
+        return
+      }
 
       if (slotToBodyRef.current.has(nearest.index)) {
         const existingId = slotToBodyRef.current.get(nearest.index)
@@ -586,18 +536,48 @@ function App() {
       evaluateGrid()
     }
 
-    const handleStartDrag = (event: DragEvent) => {
-      const body = event.body
-      if (!body) return
-      const slotIndex = bodyToSlotRef.current.get(body.id)
-      if (slotIndex === undefined) return
-      Body.setStatic(body, false)
-      clearSlot(slotIndex)
-      body.render.strokeStyle = '#334155'
+    let dragBody: Matter.Body | null = null
+    const toWorld = (event: PointerEvent) => {
+      const rect = render.canvas.getBoundingClientRect()
+      return {
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top,
+      }
     }
 
-    Events.on(mouseConstraint, 'enddrag', handleRelease)
-    Events.on(mouseConstraint, 'startdrag', handleStartDrag)
+    const handlePointerDown = (event: PointerEvent) => {
+      const point = toWorld(event)
+      const found = Query.point(balls, point)[0]
+      if (!found) return
+      dragBody = found
+      const slotIndex = bodyToSlotRef.current.get(found.id)
+      if (slotIndex !== undefined) {
+        clearSlot(slotIndex)
+      }
+      Body.setStatic(found, true)
+      Body.setPosition(found, point)
+      Body.setVelocity(found, { x: 0, y: 0 })
+      render.canvas.setPointerCapture?.(event.pointerId)
+    }
+
+    const handlePointerMove = (event: PointerEvent) => {
+      if (!dragBody) return
+      const point = toWorld(event)
+      Body.setPosition(dragBody, point)
+      Body.setVelocity(dragBody, { x: 0, y: 0 })
+    }
+
+    const handlePointerUp = (event: PointerEvent) => {
+      if (!dragBody) return
+      dropBody(dragBody)
+      dragBody = null
+      render.canvas.releasePointerCapture?.(event.pointerId)
+    }
+
+    render.canvas.addEventListener('pointerdown', handlePointerDown)
+    render.canvas.addEventListener('pointermove', handlePointerMove)
+    render.canvas.addEventListener('pointerup', handlePointerUp)
+    render.canvas.addEventListener('pointercancel', handlePointerUp)
 
     const lockSnapped = () => {
       slotCenters.forEach((slot) => {
@@ -638,13 +618,14 @@ function App() {
     Render.run(render)
 
     return () => {
-      Events.off(mouseConstraint, 'enddrag', handleRelease)
-      Events.off(mouseConstraint, 'startdrag', handleStartDrag)
       Events.off(engine, 'beforeUpdate', lockSnapped)
-      window.removeEventListener('resize', updateMouseOffset)
-      render.canvas.removeEventListener('touchstart', handleTouchStart)
-      render.canvas.removeEventListener('touchmove', handleTouchMove)
-      render.canvas.removeEventListener('touchend', handleTouchEnd)
+      render.canvas.removeEventListener('touchstart', preventTouch)
+      render.canvas.removeEventListener('touchmove', preventTouch)
+      render.canvas.removeEventListener('touchend', preventTouch)
+      render.canvas.removeEventListener('pointerdown', handlePointerDown)
+      render.canvas.removeEventListener('pointermove', handlePointerMove)
+      render.canvas.removeEventListener('pointerup', handlePointerUp)
+      render.canvas.removeEventListener('pointercancel', handlePointerUp)
       Render.stop(render)
       Runner.stop(runner)
       World.clear(engine.world, false)
